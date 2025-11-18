@@ -2,16 +2,26 @@
 
 子供向けのNFCタグを使った楽しいポイント管理システムです。NFCタグをスキャンすることで自動的にポイントが蓄積され、リアルタイムでダッシュボードに反映されます。
 
-![システム概要](images/system-overview.png)
+## 🖥️ 実際のシステム画面
+
+![ダッシュボード](images/ダッシュボード.PNG)
+
+**上記は実際の動作中ダッシュボード画面です**
+- 📊 リアルタイム統計表示
+- 👥 各ユーザーの詳細ポイント状況  
+- 📈 美しいChart.jsグラフ
+- 🎯 クリックで個別詳細画面へ遷移
 
 ## 🌟 特徴
 
 - **📱 iPhone ショートカット連携**: NFCタグを読み込むだけで自動実行
+- **🎯 インタラクティブポイント選択**: その場でポイント数を選択可能
 - **📊 リアルタイムダッシュボード**: Google Apps Scriptで動的なWebダッシュボードを提供
 - **📈 詳細な分析機能**: 日別・時間別・曜日別の統計グラフ
 - **🎨 レスポンシブデザイン**: モバイルフレンドリーなUI
 - **⚡ 高速表示**: Chart.jsによる軽量で美しいグラフ
 - **🔄 自動更新**: リアルタイムでのデータ反映
+- **🔊 フィードバック機能**: 振動・サウンドによる操作確認
 - **👶 子供向け**: 分かりやすいUIと楽しいポイント表示
 
 ## 🚀 システム構成
@@ -65,17 +75,26 @@ NFCタグ → iPhone → ショートカット → Google Apps Script → スプ
 3. NFCスキャン時のアクションを設定
 4. WebリクエストでGoogle Apps Scriptへデータ送信
 
-詳細な設定手順は [docs/setup-guide.md](docs/setup-guide.md) を参照してください。
+詳細な設定手順は以下のガイドを参照してください：
+- [基本セットアップガイド](docs/setup-guide.md)
+- [改良版iPhoneショートカット設定](docs/iphone-shortcut-setup-v2.md) - **NEW!**
 
 ## 🌐 ライブデモ
 
 **ダッシュボードデモ**: https://script.google.com/macros/s/AKfycbz1NMadryd4_VxmKR9QiFZgZfJyUeF0TbTXEv1oE1M4ql5Dng2Xd_-x-1Ynw8FoqcxyzA/exec?action=dashboard
 
-## 📸 設定手順スクリーンショット
+## 📸 システムスクリーンショット
 
-| ショートカット作成 | Webアクション設定 | 通知設定 |
+### 📊 システムダッシュボード
+![メインダッシュボード](images/ダッシュボード.PNG)
+*リアルタイム統計とインタラクティブなユーザー管理画面*
+
+### 📱 iPhone設定手順
+| ショートカット作成 | オートメーション設定 | NFCスキャン設定 |
 |---|---|---|
-| ![Shortcut Creation](images/IMG_9553.PNG) | ![Web Action](images/IMG_9554.PNG) | ![Notification](images/IMG_9556.PNG) |
+| ![ショートカット](images/ショートカット.PNG) | ![オートメーション設定](images/オートメーション_設定.PNG) | ![NFCスキャン](images/オートメーション_nfcスキャン.PNG) |
+
+*改良版インタラクティブショートカット設定画面*
 
 詳細な設定手順は [詳細セットアップガイド](docs/detailed-setup-with-screenshots.md) をご覧ください。
 

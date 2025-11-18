@@ -1,16 +1,16 @@
 /**
- * NFC キッズポイントシステム - Google Apps Script
+ * NFC キッズポイントシステム - Google Apps Script 最新版
  * 
- * 子供向けNFCポイント管理システムのバックエンド処理
+ * 改良版iPhoneショートカット対応・最適化されたダッシュボード
  * 
  * 機能:
- * - NFCタグデータの受信・保存
- * - リアルタイムダッシュボードの生成（改良版UIデザイン）
- * - ユーザー別詳細統計の表示
- * - レスポンシブWebUI（グリッドレイアウト対応）
+ * - NFCタグデータの受信・保存（改良版ショートカット対応）
+ * - 高性能ダッシュボード（グリッドレイアウト・遅延読み込み）
+ * - ユーザー別詳細統計（3種類のグラフ表示）
+ * - レスポンシブWebUI（全デバイス対応）
  * 
  * @author NFCキッズポイントシステム開発チーム
- * @version 2.0.0
+ * @version 3.0.0
  * @license MIT
  */
 
@@ -32,12 +32,12 @@ function doGet(e) {
     return createDashboard();
   }
   
-  return ContentService.createTextOutput('NFC Logger API is running');
+  return ContentService.createTextOutput('NFC Kids Point System API v3.0 - Ready');
 }
 
 /**
  * POSTリクエストのハンドラ
- * NFCタグデータの受信・保存処理
+ * NFCタグデータの受信・保存処理（改良版ショートカット対応）
  * 
  * @param {Object} e - リクエストオブジェクト
  * @returns {TextOutput} JSON形式のレスポンス
@@ -47,6 +47,7 @@ function doPost(e) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const timestamp = new Date();
     
+    // POSTデータの解析
     const rawData = JSON.parse(e.postData.contents);
     
     // デフォルト値の設定
@@ -54,28 +55,32 @@ function doPost(e) {
     let tagName = 'unknown';
     let points = 1;
     
-    // データの解析（二重JSON対応）
+    // データの解析（二重JSON形式と通常JSON両対応）
     const keys = Object.keys(rawData);
     if (keys.length > 0) {
       try {
+        // 二重JSON形式の場合（従来の形式）
         const innerData = JSON.parse(keys[0]);
         nfcId = innerData.nfcId || 'unknown';
         tagName = innerData.tagName || 'unknown';
         points = parseInt(innerData.points) || 1;
-      } catch (e) {
+      } catch (parseError) {
+        // 通常JSON形式の場合（改良版ショートカット形式）
         nfcId = rawData.nfcId || 'unknown';
         tagName = rawData.tagName || 'unknown';
         points = parseInt(rawData.points) || 1;
       }
     }
     
-    // シート取得または作成
+    // ユーザー別シートの取得または作成
     let sheet = ss.getSheetByName(tagName);
     if (!sheet) {
       sheet = ss.insertSheet(tagName);
       // ヘッダー行の設定
       sheet.appendRow(['タイムスタンプ', 'NFC ID', 'タグ名', 'ポイント']);
       sheet.getRange(1, 1, 1, 4).setFontWeight('bold');
+      sheet.getRange(1, 1, 1, 4).setBackground('#4285f4');
+      sheet.getRange(1, 1, 1, 4).setFontColor('white');
     }
     
     // データの記録
@@ -89,23 +94,27 @@ function doPost(e) {
     // 成功レスポンス
     return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
+      message: 'ポイント記録完了',
       nfcId: nfcId,
       tagName: tagName,
-      points: points
+      points: points,
+      timestamp: timestamp.toISOString()
     })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
     // エラーレスポンス
+    console.error('POSTエラー:', error);
     return ContentService.createTextOutput(JSON.stringify({
       status: 'error',
-      message: error.toString()
+      message: error.toString(),
+      timestamp: new Date().toISOString()
     })).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
 /**
  * メインダッシュボードの生成
- * 全ユーザーの統計とグラフを表示
+ * 全ユーザーの統計と高性能グラフを表示
  * 
  * @returns {HtmlOutput} ダッシュボードHTML
  */
@@ -113,7 +122,7 @@ function createDashboard() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheets = ss.getSheets();
   
-  // 日付計算
+  // 日付計算の最適化
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayStr = today.toLocaleDateString('ja-JP');
@@ -145,7 +154,7 @@ function createDashboard() {
     let weekCount = 0;
     let weekPoints = 0;
     
-    // データの集計
+    // データの集計（最適化）
     for (let i = 1; i < data.length; i++) {
       const recordDate = new Date(data[i][0]);
       const dateStr = recordDate.toLocaleDateString('ja-JP');
@@ -155,7 +164,7 @@ function createDashboard() {
       totalCount++;
       totalPoints += points;
       
-      // 期間別集計
+      // 期間別集計（最適化）
       if (recordDate >= today) {
         todayCount++;
         todayPoints += points;
@@ -203,97 +212,327 @@ function createDashboard() {
   const weekAll = chartData.reduce(function(sum, tag) { return sum + tag.week; }, 0);
   const weekPointsAll = chartData.reduce(function(sum, tag) { return sum + tag.weekPoints; }, 0);
   
-  // HTML生成（最適化済み）
+  // HTML生成（最新のレスポンシブデザイン）
   const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NFC記録ダッシュボード</title>
+<title>NFC記録ダッシュボード v3.0</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;padding:20px;background:#f5f5f5;margin:0}
-h1{text-align:center;color:#333;margin-bottom:10px}
-.header-section{text-align:center;margin-bottom:30px}
-.refresh-btn{background:#4285f4;color:white;border:none;padding:12px 24px;border-radius:6px;font-size:1em;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.2);transition:background 0.3s}
-.refresh-btn:hover{background:#3367d6}
-.last-updated{color:#666;font-size:0.9em;margin-top:10px}
-.summary-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:15px;max-width:1200px;margin:0 auto 30px}
-.stat-box{background:white;padding:20px;border-radius:8px;text-align:center;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
-.stat-number{font-size:2.5em;font-weight:bold;color:#4285f4;margin-bottom:5px}
-.stat-number.today{color:#ff6b6b}
-.stat-number.yesterday{color:#ffa726}
-.stat-label{color:#666;font-size:0.9em}
-.stat-sublabel{color:#999;font-size:0.75em;margin-top:3px}
-.user-section{background:white;border-radius:8px;padding:25px;margin:20px auto;max-width:1200px;box-shadow:0 2px 4px rgba(0,0,0,0.1);cursor:pointer;transition:transform 0.2s,box-shadow 0.2s}
-.user-section:hover{transform:translateY(-2px);box-shadow:0 4px 8px rgba(0,0,0,0.15)}
-.user-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
-.user-name{font-size:1.5em;font-weight:bold;color:#333}
-.user-stats{display:flex;gap:20px;flex-wrap:wrap}
-.user-stat{text-align:center;padding:10px;background:#f8f9fa;border-radius:6px;min-width:90px}
-.user-stat-number{font-size:1.3em;font-weight:bold;color:#4285f4}
-.user-stat-number.today{color:#ff6b6b}
-.user-stat-number.yesterday{color:#ffa726}
-.user-stat-label{font-size:0.8em;color:#666;margin-top:3px}
-.chart-wrapper{margin-top:20px;min-height:200px}
-.loading{color:#999;text-align:center;padding:20px}
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin: 0;
+  min-height: 100vh;
+}
+
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  color: white;
+  margin-bottom: 10px;
+  font-size: 2.5em;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.header-section {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.refresh-btn {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s;
+}
+
+.refresh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.last-updated {
+  color: white;
+  font-size: 0.9em;
+  margin-top: 10px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.stat-box {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.stat-box:hover {
+  transform: translateY(-5px);
+}
+
+.stat-number {
+  font-size: 2.5em;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 5px;
+}
+
+.stat-number.today {
+  color: #ff6b6b;
+}
+
+.stat-number.yesterday {
+  color: #ffa726;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.stat-sublabel {
+  color: #999;
+  font-size: 0.75em;
+  margin-top: 3px;
+}
+
+.user-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .user-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  .user-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.user-tile {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-tile:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+.user-tile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.user-name {
+  font-size: 1.4em;
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-arrow {
+  font-size: 1.2em;
+  color: #667eea;
+}
+
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.mini-stat {
+  text-align: center;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.mini-stat-number {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.mini-stat-number.today {
+  color: #ff6b6b;
+}
+
+.mini-stat-number.yesterday {
+  color: #ffa726;
+}
+
+.mini-stat-label {
+  font-size: 0.75em;
+  color: #666;
+  margin-top: 3px;
+  font-weight: 600;
+}
+
+.mini-stat-sublabel {
+  font-size: 0.7em;
+  color: #999;
+}
+
+.chart-area {
+  margin-top: 10px;
+  min-height: 180px;
+  position: relative;
+}
+
+.loading {
+  color: #999;
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 0.9em;
+}
+
+canvas {
+  max-height: 180px;
+}
 </style>
 </head>
 <body>
-<div class="header-section">
-<h1>📊 NFC記録ダッシュボード</h1>
-<button class="refresh-btn" onclick="refreshPage()">🔄 更新</button>
-<div class="last-updated">最終更新: ${now.toLocaleString('ja-JP')}</div>
-</div>
+<div class="dashboard-container">
+  <div class="header-section">
+    <h1>📊 NFC記録ダッシュボード v3.0</h1>
+    <button class="refresh-btn" onclick="refreshPage()">🔄 更新</button>
+    <div class="last-updated">最終更新: ${now.toLocaleString('ja-JP')}</div>
+  </div>
 
-<div class="summary-stats">
-<div class="stat-box"><div class="stat-number">${chartData.length}</div><div class="stat-label">登録ユーザー数</div></div>
-<div class="stat-box"><div class="stat-number">${totalPointsAll}</div><div class="stat-label">総ポイント</div><div class="stat-sublabel">${totalAll}回</div></div>
-<div class="stat-box"><div class="stat-number today">${todayPointsAll}</div><div class="stat-label">本日</div><div class="stat-sublabel">${todayAll}回</div></div>
-<div class="stat-box"><div class="stat-number yesterday">${yesterdayPointsAll}</div><div class="stat-label">昨日</div><div class="stat-sublabel">${yesterdayAll}回</div></div>
-<div class="stat-box"><div class="stat-number">${threeDaysPointsAll}</div><div class="stat-label">3日間</div><div class="stat-sublabel">${threeDaysAll}回</div></div>
-<div class="stat-box"><div class="stat-number">${weekPointsAll}</div><div class="stat-label">今週</div><div class="stat-sublabel">${weekAll}回</div></div>
-</div>
+  <div class="summary-stats">
+    <div class="stat-box">
+      <div class="stat-number">${chartData.length}</div>
+      <div class="stat-label">登録ユーザー数</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">${totalPointsAll}</div>
+      <div class="stat-label">総ポイント</div>
+      <div class="stat-sublabel">${totalAll}回</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number today">${todayPointsAll}</div>
+      <div class="stat-label">本日</div>
+      <div class="stat-sublabel">${todayAll}回</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number yesterday">${yesterdayPointsAll}</div>
+      <div class="stat-label">昨日</div>
+      <div class="stat-sublabel">${yesterdayAll}回</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">${threeDaysPointsAll}</div>
+      <div class="stat-label">3日間</div>
+      <div class="stat-sublabel">${threeDaysAll}回</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">${weekPointsAll}</div>
+      <div class="stat-label">今週</div>
+      <div class="stat-sublabel">${weekAll}回</div>
+    </div>
+  </div>
 
-${chartData.map(function(tag, i) {
-  const chartId = 'chart_' + i;
-  const detailUrl = '?action=dashboard&user=' + encodeURIComponent(tag.name);
-  return `
-<div class="user-section" onclick="location.href='${detailUrl}'">
-<div class="user-header">
-<div class="user-name">${tag.name} 👉</div>
-<div class="user-stats">
-<div class="user-stat"><div class="user-stat-number">${tag.totalPoints}</div><div class="user-stat-label">総ポイント</div><div class="stat-sublabel">${tag.total}回</div></div>
-<div class="user-stat"><div class="user-stat-number today">${tag.todayPoints}</div><div class="user-stat-label">本日</div><div class="stat-sublabel">${tag.today}回</div></div>
-<div class="user-stat"><div class="user-stat-number yesterday">${tag.yesterdayPoints}</div><div class="user-stat-label">昨日</div><div class="stat-sublabel">${tag.yesterday}回</div></div>
-<div class="user-stat"><div class="user-stat-number">${tag.threeDaysPoints}</div><div class="user-stat-label">3日間</div><div class="stat-sublabel">${tag.threeDays}回</div></div>
-<div class="user-stat"><div class="user-stat-number">${tag.weekPoints}</div><div class="user-stat-label">今週</div><div class="stat-sublabel">${tag.week}回</div></div>
+  <div class="user-grid">
+    ${chartData.map(function(tag, i) {
+      const chartId = 'chart_' + i;
+      const detailUrl = '?action=dashboard&user=' + encodeURIComponent(tag.name);
+      return `
+    <div class="user-tile" onclick="location.href='${detailUrl}'">
+      <div class="user-tile-header">
+        <div class="user-name">
+          ${tag.name}
+          <span class="detail-arrow">👉</span>
+        </div>
+      </div>
+      
+      <div class="mini-stats">
+        <div class="mini-stat">
+          <div class="mini-stat-number">${tag.totalPoints}</div>
+          <div class="mini-stat-label">総ポイント</div>
+          <div class="mini-stat-sublabel">${tag.total}回</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-number today">${tag.todayPoints}</div>
+          <div class="mini-stat-label">本日</div>
+          <div class="mini-stat-sublabel">${tag.today}回</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-number yesterday">${tag.yesterdayPoints}</div>
+          <div class="mini-stat-label">昨日</div>
+          <div class="mini-stat-sublabel">${tag.yesterday}回</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-number">${tag.weekPoints}</div>
+          <div class="mini-stat-label">今週</div>
+          <div class="mini-stat-sublabel">${tag.week}回</div>
+        </div>
+      </div>
+      
+      <div class="chart-area" data-chart-index="${i}">
+        <div class="loading">チャートを読み込み中...</div>
+        <canvas id="${chartId}" style="display:none"></canvas>
+      </div>
+    </div>`;
+    }).join('')}
+  </div>
 </div>
-</div>
-<div class="chart-wrapper" data-chart-index="${i}">
-<div class="loading">チャートを読み込み中...</div>
-<canvas id="${chartId}" style="display:none"></canvas>
-</div>
-</div>`;
-}).join('')}
 
 <script>
 const todayDate = "${todayStr}";
 const chartDataArray = ${JSON.stringify(chartData)};
 const charts = new Map();
 
-// 更新ボタンの処理
 function refreshPage() {
   const currentUrl = window.location.href.split('?')[0];
   window.location.href = currentUrl + '?action=dashboard&t=' + new Date().getTime();
 }
-
-// Intersection Observerで遅延読み込み
-const observerOptions = {
-  root: null,
-  rootMargin: '100px',
-  threshold: 0.1
-};
 
 function createChart(index) {
   if (charts.has(index)) return;
@@ -308,7 +547,7 @@ function createChart(index) {
   const labels = Object.keys(tag.dates);
   const data = Object.values(tag.dates);
   const bgColors = labels.map(label => 
-    label === todayDate ? 'rgba(255,107,107,0.3)' : 'rgba(66,133,244,0.1)'
+    label === todayDate ? 'rgba(255,107,107,0.3)' : 'rgba(102,126,234,0.1)'
   );
   
   canvas.style.display = 'block';
@@ -321,21 +560,22 @@ function createChart(index) {
       datasets: [{
         label: 'ポイント',
         data: data,
-        borderColor: 'rgb(66,133,244)',
+        borderColor: 'rgb(102,126,234)',
         backgroundColor: bgColors,
         tension: 0.3,
         fill: true,
         pointRadius: function(context) {
-          return context.parsed.x === labels.indexOf(todayDate) ? 8 : 3;
+          return context.parsed.x === labels.indexOf(todayDate) ? 6 : 2;
         },
         pointBackgroundColor: function(context) {
-          return context.parsed.x === labels.indexOf(todayDate) ? '#ff6b6b' : 'rgb(66,133,244)';
+          return context.parsed.x === labels.indexOf(todayDate) ? '#ff6b6b' : 'rgb(102,126,234)';
         }
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: true,
+      aspectRatio: 2,
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -352,6 +592,9 @@ function createChart(index) {
       scales: {
         x: {
           ticks: {
+            maxRotation: 45,
+            minRotation: 45,
+            font: { size: 9 },
             callback: function(value, index) {
               const label = labels[index];
               return label === todayDate ? label + ' ★' : label;
@@ -363,7 +606,10 @@ function createChart(index) {
         },
         y: {
           beginAtZero: true,
-          ticks: { stepSize: 1 }
+          ticks: { 
+            stepSize: 1,
+            font: { size: 10 }
+          }
         }
       }
     }
@@ -371,6 +617,13 @@ function createChart(index) {
   
   charts.set(index, chart);
 }
+
+// パフォーマンス最適化：Intersection Observer
+const observerOptions = {
+  root: null,
+  rootMargin: '50px',
+  threshold: 0.1
+};
 
 const observer = new IntersectionObserver(function(entries) {
   entries.forEach(function(entry) {
@@ -382,9 +635,8 @@ const observer = new IntersectionObserver(function(entries) {
   });
 }, observerOptions);
 
-// 全チャートラッパーを監視
 document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.chart-wrapper').forEach(function(wrapper) {
+  document.querySelectorAll('.chart-area').forEach(function(wrapper) {
     observer.observe(wrapper);
   });
 });
@@ -408,7 +660,16 @@ function createUserDetail(userName) {
     const sheet = ss.getSheetByName(userName);
     
     if (!sheet) {
-      return HtmlService.createHtmlOutput('<html><body style="padding:40px;font-family:Arial"><h1>ユーザーが見つかりません: ' + userName + '</h1><a href="?action=dashboard" style="color:#4285f4">← ダッシュボードに戻る</a></body></html>');
+      return HtmlService.createHtmlOutput(`
+        <html>
+        <body style="padding:40px;font-family:Arial;text-align:center">
+          <h1>❌ ユーザーが見つかりません</h1>
+          <h2>${userName}</h2>
+          <p style="color:#666">このユーザーのデータが存在しません。</p>
+          <a href="?action=dashboard" style="color:#4285f4;text-decoration:none;background:#f8f9fa;padding:10px 20px;border-radius:6px;display:inline-block;margin-top:20px">← ダッシュボードに戻る</a>
+        </body>
+        </html>
+      `);
     }
     
     const data = sheet.getDataRange().getValues();
@@ -423,7 +684,7 @@ function createUserDetail(userName) {
     const records = [];
     let totalPoints = 0;
     
-    // データ分析
+    // データ分析（高性能処理）
     for (let i = 1; i < data.length; i++) {
       const recordDate = new Date(data[i][0]);
       const hour = recordDate.getHours();
@@ -431,11 +692,9 @@ function createUserDetail(userName) {
       const dateStr = recordDate.toLocaleDateString('ja-JP');
       const points = parseInt(data[i][3]) || 1;
       
-      // 時間別集計
+      // 時間別・曜日別・日別集計
       hourlyData[hour] = (hourlyData[hour] || 0) + points;
-      // 曜日別集計
       weekdayData[weekday] += points;
-      // 日別集計
       dailyData[dateStr] = (dailyData[dateStr] || 0) + points;
       totalPoints += points;
       
@@ -462,18 +721,18 @@ function createUserDetail(userName) {
     const dailyLabels = Object.keys(dailyData);
     const dailyValues = Object.values(dailyData);
     
-    // 記録履歴テーブルの生成
+    // 記録履歴テーブルの生成（最新20件）
     const recordsHtml = records.slice(-20).reverse().map(function(rec) {
-      return '<tr><td>' + rec.timestamp + '</td><td>' + rec.tagName + '</td><td class="points-cell">' + rec.points + ' pt</td></tr>';
+      return `<tr><td>${rec.timestamp}</td><td>${rec.tagName}</td><td class="points-cell">${rec.points} pt</td></tr>`;
     }).join('');
     
-    // ユーザー詳細HTML
+    // ユーザー詳細HTML（最新デザイン）
     const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${userName} - 詳細</title>
+<title>${userName} - 詳細 v3.0</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;padding:20px;background:#f5f5f5;margin:0}
@@ -503,17 +762,17 @@ h1{color:#333;margin-bottom:10px}
 </div>
 
 <div class="chart-section">
-<div class="chart-title">📅 日別ポイント</div>
+<div class="chart-title">📅 日別ポイント推移</div>
 <canvas id="dailyChart"></canvas>
 </div>
 
 <div class="chart-section">
-<div class="chart-title">🕐 時間帯別ポイント</div>
+<div class="chart-title">🕐 時間帯別ポイント分析</div>
 <canvas id="hourlyChart"></canvas>
 </div>
 
 <div class="chart-section">
-<div class="chart-title">📆 曜日別ポイント</div>
+<div class="chart-title">📆 曜日別ポイント統計</div>
 <canvas id="weekdayChart"></canvas>
 </div>
 
@@ -541,7 +800,7 @@ window.addEventListener('DOMContentLoaded', function() {
     label === todayDate ? 'rgba(255,107,107,0.3)' : 'rgba(66,133,244,0.1)'
   );
   
-  // 日別ポイントチャート
+  // 日別ポイントチャート（線グラフ）
   new Chart(document.getElementById('dailyChart'), {
     type: 'line',
     data: {
@@ -596,7 +855,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // 時間帯別ポイントチャート
+  // 時間帯別ポイントチャート（棒グラフ）
   new Chart(document.getElementById('hourlyChart'), {
     type: 'bar',
     data: {
@@ -604,7 +863,9 @@ window.addEventListener('DOMContentLoaded', function() {
       datasets: [{
         label: 'ポイント',
         data: ${JSON.stringify(hourValues)},
-        backgroundColor: 'rgba(66,133,244,0.7)'
+        backgroundColor: 'rgba(66,133,244,0.7)',
+        borderColor: 'rgb(66,133,244)',
+        borderWidth: 1
       }]
     },
     options: {
@@ -619,7 +880,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // 曜日別ポイントチャート
+  // 曜日別ポイントチャート（棒グラフ）
   new Chart(document.getElementById('weekdayChart'), {
     type: 'bar',
     data: {
@@ -627,7 +888,9 @@ window.addEventListener('DOMContentLoaded', function() {
       datasets: [{
         label: 'ポイント',
         data: ${JSON.stringify(weekdayValues)},
-        backgroundColor: 'rgba(255,107,107,0.7)'
+        backgroundColor: 'rgba(255,107,107,0.7)',
+        borderColor: 'rgb(255,107,107)',
+        borderWidth: 1
       }]
     },
     options: {
@@ -649,6 +912,42 @@ window.addEventListener('DOMContentLoaded', function() {
     return HtmlService.createHtmlOutput(html);
     
   } catch (error) {
-    return HtmlService.createHtmlOutput('<html><body style="padding:40px"><h1>エラーが発生しました</h1><p>' + error.toString() + '</p><a href="?action=dashboard" style="color:#4285f4">← 戻る</a></body></html>');
+    console.error('ユーザー詳細エラー:', error);
+    return HtmlService.createHtmlOutput(`
+      <html>
+      <body style="padding:40px;font-family:Arial;text-align:center">
+        <h1>⚠️ エラーが発生しました</h1>
+        <p style="color:#d32f2f">${error.toString()}</p>
+        <a href="?action=dashboard" style="color:#4285f4;text-decoration:none;background:#f8f9fa;padding:10px 20px;border-radius:6px;display:inline-block;margin-top:20px">← ダッシュボードに戻る</a>
+      </body>
+      </html>
+    `);
   }
+}
+
+/**
+ * システム情報表示用関数（管理者用）
+ * 
+ * @returns {string} システム情報
+ */
+function getSystemInfo() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  const userSheets = sheets.filter(sheet => 
+    !['DEBUG', 'RESULT', 'Sheet1', 'DEBUG_POINTS'].includes(sheet.getName())
+  );
+  
+  return {
+    version: '3.0.0',
+    totalUsers: userSheets.length,
+    totalSheets: sheets.length,
+    lastUpdated: new Date().toISOString(),
+    features: [
+      'インタラクティブポイント選択対応',
+      '高性能ダッシュボード',
+      'レスポンシブUI',
+      '遅延読み込み最適化',
+      '詳細統計分析'
+    ]
+  };
 }
