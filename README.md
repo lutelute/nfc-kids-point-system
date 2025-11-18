@@ -67,11 +67,17 @@ NFCタグ → iPhone → ショートカット → Google Apps Script → スプ
 
 詳細な設定手順は [docs/setup-guide.md](docs/setup-guide.md) を参照してください。
 
-## 📸 スクリーンショット
+## 🌐 ライブデモ
 
-| ダッシュボード | ユーザー詳細 | iPhone ショートカット |
+**ダッシュボードデモ**: https://script.google.com/macros/s/AKfycbz1NMadryd4_VxmKR9QiFZgZfJyUeF0TbTXEv1oE1M4ql5Dng2Xd_-x-1Ynw8FoqcxyzA/exec?action=dashboard
+
+## 📸 設定手順スクリーンショット
+
+| ショートカット作成 | Webアクション設定 | 通知設定 |
 |---|---|---|
-| ![Dashboard](images/dashboard.png) | ![User Detail](images/user-detail.png) | ![iPhone Setup](images/iphone-shortcut.png) |
+| ![Shortcut Creation](images/IMG_9553.PNG) | ![Web Action](images/IMG_9554.PNG) | ![Notification](images/IMG_9556.PNG) |
+
+詳細な設定手順は [詳細セットアップガイド](docs/detailed-setup-with-screenshots.md) をご覧ください。
 
 ## 📊 ダッシュボードの使い方
 
